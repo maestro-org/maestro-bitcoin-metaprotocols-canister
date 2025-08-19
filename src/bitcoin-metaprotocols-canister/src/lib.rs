@@ -1,6 +1,7 @@
 use candid::{candid_method, CandidType};
-use ic_cdk::api::management_canister::http_request::{
-    CanisterHttpRequestArgument, HttpHeader, HttpMethod, HttpResponse, TransformArgs,
+use ic_cdk::api::{canister_self, msg_caller};
+use ic_cdk::management_canister::{
+    http_request, HttpHeader, HttpMethod, HttpRequestArgs, HttpRequestResult, TransformArgs,
     TransformContext, TransformFunc,
 };
 use ic_cdk::storage;
@@ -28,7 +29,7 @@ struct ApiKey {
 #[query]
 #[candid_method(query)]
 fn get_api_key() -> String {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     let caller_str = caller.to_text();
 
     if !AUTHORIZED_CALLERS.iter().any(|&auth| auth == caller_str) {
@@ -78,7 +79,7 @@ pub struct MaestroInscriptionInfoResponse {
 
 #[derive(CandidType, Deserialize, Serialize, Debug)]
 pub struct MaestroCollectionStats {
-    floorPrice: Option<String>,
+    floor_price: Option<String>,
 }
 
 #[derive(CandidType, Deserialize, Serialize, Debug)]
@@ -173,7 +174,7 @@ async fn get_address_inscriptions(
     address: String,
     count: String,
 ) -> Result<AddressInscriptions, String> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     let caller_str = caller.to_text();
 
     if !AUTHORIZED_CALLERS.iter().any(|&auth| auth == caller_str) {
@@ -187,7 +188,7 @@ async fn get_address_inscriptions(
         BASE_URL, address, count
     );
 
-    let address_inscriptions_maestro_request = CanisterHttpRequestArgument {
+    let address_inscriptions_maestro_request = HttpRequestArgs {
         url: address_inscriptions_maestro_url,
         method: HttpMethod::GET,
         headers: vec![HttpHeader {
@@ -197,20 +198,13 @@ async fn get_address_inscriptions(
         body: None,
         max_response_bytes: Some(5 * 1000), // 5000 KB
         transform: Some(TransformContext {
-            function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+            function: TransformFunc::new(canister_self(), "transform".to_string()),
             context: vec![],
         }),
     };
 
-    let cycles = 1_000_000_000u128;
-
-    match ic_cdk::api::management_canister::http_request::http_request(
-        address_inscriptions_maestro_request,
-        cycles,
-    )
-    .await
-    {
-        Ok((response,)) => {
+    match http_request(&address_inscriptions_maestro_request).await {
+        Ok(response) => {
             let raw_body = String::from_utf8_lossy(&response.body);
             ic_cdk::println!("HTTP response body: {}", raw_body);
 
@@ -227,7 +221,7 @@ async fn get_address_inscriptions(
                     BASE_URL, inscription.inscription_id
                 );
 
-                let inscription_info_request = CanisterHttpRequestArgument {
+                let inscription_info_request = HttpRequestArgs {
                     url: inscription_info_url,
                     method: HttpMethod::GET,
                     headers: vec![HttpHeader {
@@ -237,43 +231,36 @@ async fn get_address_inscriptions(
                     body: None,
                     max_response_bytes: Some(5 * 1000),
                     transform: Some(TransformContext {
-                        function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+                        function: TransformFunc::new(canister_self(), "transform".to_string()),
                         context: vec![],
                     }),
                 };
 
-                let collection_symbol =
-                    match ic_cdk::api::management_canister::http_request::http_request(
-                        inscription_info_request,
-                        cycles,
-                    )
-                    .await
-                    {
-                        Ok((inscription_info_response,)) => {
-                            match serde_json::from_slice::<MaestroInscriptionInfoResponse>(
-                                &inscription_info_response.body,
-                            ) {
-                                Ok(info_response) => info_response.data.collection_symbol,
-                                Err(e) => {
-                                    ic_cdk::println!(
-                                "Failed to parse MaestroInscriptionInfoResponse: {} (body: {})",
-                                e,
-                                String::from_utf8_lossy(&inscription_info_response.body)
-                            );
-                                    None
-                                }
+                let collection_symbol = match http_request(&inscription_info_request).await {
+                    Ok(inscription_info_response) => {
+                        match serde_json::from_slice::<MaestroInscriptionInfoResponse>(
+                            &inscription_info_response.body,
+                        ) {
+                            Ok(info_response) => info_response.data.collection_symbol,
+                            Err(e) => {
+                                ic_cdk::println!(
+                                    "Failed to parse MaestroInscriptionInfoResponse: {} (body: {})",
+                                    e,
+                                    String::from_utf8_lossy(&inscription_info_response.body)
+                                );
+                                None
                             }
                         }
-                        Err((code, message)) => {
-                            ic_cdk::println!(
-                                "Failed to fetch inscription info for {}: {} - {}",
-                                inscription.inscription_id,
-                                code as u8,
-                                message
-                            );
-                            None
-                        }
-                    };
+                    }
+                    Err(e) => {
+                        ic_cdk::println!(
+                            "Failed to fetch inscription info for {}: {:?}",
+                            inscription.inscription_id,
+                            e
+                        );
+                        None
+                    }
+                };
 
                 // Fetch floor price if collection_symbol exists
                 let mut floor_price = 0;
@@ -281,7 +268,7 @@ async fn get_address_inscriptions(
                     let collection_stats_url =
                         format!("{}/assets/collections/{}/stats", BASE_URL, symbol);
 
-                    let collection_stats_request = CanisterHttpRequestArgument {
+                    let collection_stats_request = HttpRequestArgs {
                         url: collection_stats_url,
                         method: HttpMethod::GET,
                         headers: vec![HttpHeader {
@@ -291,48 +278,41 @@ async fn get_address_inscriptions(
                         body: None,
                         max_response_bytes: Some(5 * 1000),
                         transform: Some(TransformContext {
-                            function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+                            function: TransformFunc::new(canister_self(), "transform".to_string()),
                             context: vec![],
                         }),
                     };
 
-                    floor_price =
-                        match ic_cdk::api::management_canister::http_request::http_request(
-                            collection_stats_request,
-                            cycles,
-                        )
-                        .await
-                        {
-                            Ok((collection_stats_response,)) => {
-                                match serde_json::from_slice::<MaestroCollectionStatsResponse>(
-                                    &collection_stats_response.body,
-                                ) {
-                                    Ok(stats_response) => stats_response
-                                        .data
-                                        .floorPrice
-                                        .unwrap_or("0".to_string())
-                                        .parse::<i64>()
-                                        .unwrap_or(0),
-                                    Err(e) => {
-                                        ic_cdk::println!(
+                    floor_price = match http_request(&collection_stats_request).await {
+                        Ok(collection_stats_response) => {
+                            match serde_json::from_slice::<MaestroCollectionStatsResponse>(
+                                &collection_stats_response.body,
+                            ) {
+                                Ok(stats_response) => stats_response
+                                    .data
+                                    .floor_price
+                                    .unwrap_or("0".to_string())
+                                    .parse::<i64>()
+                                    .unwrap_or(0),
+                                Err(e) => {
+                                    ic_cdk::println!(
                                 "Failed to parse MaestroCollectionStatsResponse: {} (body: {})",
                                 e,
                                 String::from_utf8_lossy(&collection_stats_response.body)
                             );
-                                        0
-                                    }
+                                    0
                                 }
                             }
-                            Err((code, message)) => {
-                                ic_cdk::println!(
-                                    "Failed to fetch collection stats for {}: {} - {}",
-                                    symbol,
-                                    code as u8,
-                                    message
-                                );
-                                0
-                            }
-                        };
+                        }
+                        Err(e) => {
+                            ic_cdk::println!(
+                                "Failed to fetch collection stats for {}: {:?}",
+                                symbol,
+                                e
+                            );
+                            0
+                        }
+                    };
                 }
 
                 // Fetch OMB color group
@@ -340,7 +320,7 @@ async fn get_address_inscriptions(
                     "{}/assets/inscriptions/{}/omb_color_group",
                     BASE_URL, inscription.inscription_id
                 );
-                let omb_color_group_request = CanisterHttpRequestArgument {
+                let omb_color_group_request = HttpRequestArgs {
                     url: omb_color_group_url,
                     method: HttpMethod::GET,
                     headers: vec![HttpHeader {
@@ -350,28 +330,21 @@ async fn get_address_inscriptions(
                     body: None,
                     max_response_bytes: Some(5 * 1000),
                     transform: Some(TransformContext {
-                        function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+                        function: TransformFunc::new(canister_self(), "transform".to_string()),
                         context: vec![],
                     }),
                 };
-                let (omb_color, omb_floor_price) =
-                    match ic_cdk::api::management_canister::http_request::http_request(
-                        omb_color_group_request,
-                        cycles,
-                    )
+                let (omb_color, omb_floor_price) = match http_request(&omb_color_group_request)
                     .await
-                    {
-                        Ok((omb_response,)) => {
-                            match serde_json::from_slice::<MaestroOmbColorGroup>(&omb_response.body)
-                            {
-                                Ok(omb) => {
-                                    (Some(omb.data.omb_color), Some(omb.data.omb_floor_price))
-                                }
-                                Err(_) => (None, None),
-                            }
+                {
+                    Ok(omb_response) => {
+                        match serde_json::from_slice::<MaestroOmbColorGroup>(&omb_response.body) {
+                            Ok(omb) => (Some(omb.data.omb_color), Some(omb.data.omb_floor_price)),
+                            Err(_) => (None, None),
                         }
-                        Err(_) => (None, None),
-                    };
+                    }
+                    Err(_) => (None, None),
+                };
 
                 final_result.push(AddressInscription {
                     inscription_id: inscription.inscription_id,
@@ -394,7 +367,7 @@ async fn get_address_inscriptions(
                 next_cursor: address_inscriptions_maestro_response.next_cursor,
             })
         }
-        Err((code, message)) => Err(format!("HTTP error {}: {}", code as u8, message)),
+        Err(e) => Err(format!("HTTP error: {:?}", e)),
     }
 }
 
@@ -404,7 +377,7 @@ async fn get_utxo_inscriptions(
     tx_hash: String,
     output_index: String,
 ) -> Result<UtxoInscriptions, String> {
-    let caller = ic_cdk::caller();
+    let caller = msg_caller();
     let caller_str = caller.to_text();
 
     if !AUTHORIZED_CALLERS.iter().any(|&auth| auth == caller_str) {
@@ -418,7 +391,7 @@ async fn get_utxo_inscriptions(
         BASE_URL, tx_hash, output_index
     );
 
-    let utxo_inscriptions_maestro_request = CanisterHttpRequestArgument {
+    let utxo_inscriptions_maestro_request = HttpRequestArgs {
         url: utxo_inscriptions_maestro_url,
         method: HttpMethod::GET,
         headers: vec![HttpHeader {
@@ -428,20 +401,13 @@ async fn get_utxo_inscriptions(
         body: None,
         max_response_bytes: Some(5 * 1000), // 5000 KB
         transform: Some(TransformContext {
-            function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+            function: TransformFunc::new(canister_self(), "transform".to_string()),
             context: vec![],
         }),
     };
 
-    let cycles = 1_000_000_000u128;
-
-    match ic_cdk::api::management_canister::http_request::http_request(
-        utxo_inscriptions_maestro_request,
-        cycles,
-    )
-    .await
-    {
-        Ok((response,)) => {
+    match http_request(&utxo_inscriptions_maestro_request).await {
+        Ok(response) => {
             let raw_body = String::from_utf8_lossy(&response.body);
             ic_cdk::println!("HTTP response body: {}", raw_body);
 
@@ -457,7 +423,7 @@ async fn get_utxo_inscriptions(
                     BASE_URL, inscription.inscription_id
                 );
 
-                let inscription_info_request = CanisterHttpRequestArgument {
+                let inscription_info_request = HttpRequestArgs {
                     url: inscription_info_url,
                     method: HttpMethod::GET,
                     headers: vec![HttpHeader {
@@ -467,50 +433,43 @@ async fn get_utxo_inscriptions(
                     body: None,
                     max_response_bytes: Some(5 * 1000),
                     transform: Some(TransformContext {
-                        function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+                        function: TransformFunc::new(canister_self(), "transform".to_string()),
                         context: vec![],
                     }),
                 };
 
-                let collection_symbol =
-                    match ic_cdk::api::management_canister::http_request::http_request(
-                        inscription_info_request,
-                        cycles,
-                    )
-                    .await
-                    {
-                        Ok((inscription_info_response,)) => {
-                            match serde_json::from_slice::<MaestroInscriptionInfoResponse>(
-                                &inscription_info_response.body,
-                            ) {
-                                Ok(info_response) => info_response.data.collection_symbol,
-                                Err(e) => {
-                                    ic_cdk::println!(
-                                "Failed to parse MaestroInscriptionInfoResponse: {} (body: {})",
-                                e,
-                                String::from_utf8_lossy(&inscription_info_response.body)
-                            );
-                                    None
-                                }
+                let collection_symbol = match http_request(&inscription_info_request).await {
+                    Ok(inscription_info_response) => {
+                        match serde_json::from_slice::<MaestroInscriptionInfoResponse>(
+                            &inscription_info_response.body,
+                        ) {
+                            Ok(info_response) => info_response.data.collection_symbol,
+                            Err(e) => {
+                                ic_cdk::println!(
+                                    "Failed to parse MaestroInscriptionInfoResponse: {} (body: {})",
+                                    e,
+                                    String::from_utf8_lossy(&inscription_info_response.body)
+                                );
+                                None
                             }
                         }
-                        Err((code, message)) => {
-                            ic_cdk::println!(
-                                "Failed to fetch inscription info for {}: {} - {}",
-                                inscription.inscription_id,
-                                code as u8,
-                                message
-                            );
-                            None
-                        }
-                    };
+                    }
+                    Err(e) => {
+                        ic_cdk::println!(
+                            "Failed to fetch inscription info for {}: {:?}",
+                            inscription.inscription_id,
+                            e
+                        );
+                        None
+                    }
+                };
 
                 // Fetch OMB color group
                 let omb_color_group_url = format!(
                     "{}/assets/inscriptions/{}/omb_color_group",
                     BASE_URL, inscription.inscription_id
                 );
-                let omb_color_group_request = CanisterHttpRequestArgument {
+                let omb_color_group_request = HttpRequestArgs {
                     url: omb_color_group_url,
                     method: HttpMethod::GET,
                     headers: vec![HttpHeader {
@@ -520,28 +479,21 @@ async fn get_utxo_inscriptions(
                     body: None,
                     max_response_bytes: Some(5 * 1000),
                     transform: Some(TransformContext {
-                        function: TransformFunc::new(ic_cdk::id(), "transform".to_string()),
+                        function: TransformFunc::new(canister_self(), "transform".to_string()),
                         context: vec![],
                     }),
                 };
-                let (omb_color, omb_floor_price) =
-                    match ic_cdk::api::management_canister::http_request::http_request(
-                        omb_color_group_request,
-                        cycles,
-                    )
+                let (omb_color, omb_floor_price) = match http_request(&omb_color_group_request)
                     .await
-                    {
-                        Ok((omb_response,)) => {
-                            match serde_json::from_slice::<MaestroOmbColorGroup>(&omb_response.body)
-                            {
-                                Ok(omb) => {
-                                    (Some(omb.data.omb_color), Some(omb.data.omb_floor_price))
-                                }
-                                Err(_) => (None, None),
-                            }
+                {
+                    Ok(omb_response) => {
+                        match serde_json::from_slice::<MaestroOmbColorGroup>(&omb_response.body) {
+                            Ok(omb) => (Some(omb.data.omb_color), Some(omb.data.omb_floor_price)),
+                            Err(_) => (None, None),
                         }
-                        Err(_) => (None, None),
-                    };
+                    }
+                    Err(_) => (None, None),
+                };
 
                 final_result.push(UtxoInscription {
                     inscription_id: inscription.inscription_id,
@@ -557,7 +509,7 @@ async fn get_utxo_inscriptions(
                 next_cursor: maestro_tx_out_into_response.next_cursor,
             })
         }
-        Err((code, message)) => Err(format!("HTTP error {}: {}", code as u8, message)),
+        Err(e) => Err(format!("HTTP error: {:?}", e)),
     }
 }
 
@@ -565,7 +517,7 @@ async fn get_utxo_inscriptions(
 #[update]
 #[candid_method(update)]
 async fn set_api_key(new_key: String) -> Result<(), String> {
-    let caller = ic_cdk::caller();
+    let caller = ic_cdk::api::msg_caller();
     let caller_str = caller.to_text();
 
     if !AUTHORIZED_CALLERS.iter().any(|&auth| auth == caller_str) {
@@ -578,10 +530,10 @@ async fn set_api_key(new_key: String) -> Result<(), String> {
 }
 
 #[ic_cdk::query(hidden = true)]
-fn transform(raw: TransformArgs) -> HttpResponse {
+fn transform(raw: TransformArgs) -> HttpRequestResult {
     let headers = vec![];
 
-    let mut res = HttpResponse {
+    let mut res = HttpRequestResult {
         status: raw.response.status.clone(),
         body: raw.response.body.clone(),
         headers,
@@ -597,5 +549,3 @@ fn transform(raw: TransformArgs) -> HttpResponse {
 }
 
 ic_cdk::export_candid!();
-
-fn main() {}
