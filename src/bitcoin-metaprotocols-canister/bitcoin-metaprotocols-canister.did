@@ -1,39 +1,39 @@
 type AddressInscription = record {
-    floor_price : int64;
-    satoshis : text;
-    utxo_block_height : int64;
-    utxo_txid : text;
-    utxo_vout : int32;
-    utxo_sat_offset : int64;
-    inscription_id : text;
-    collection_symbol : opt text;
-    utxo_confirmations : int64;
-    omb_color : opt text;
-    omb_floor_price : opt int64
+  floor_price : int64;
+  satoshis : text;
+  utxo_block_height : int64;
+  utxo_txid : text;
+  utxo_vout : int32;
+  utxo_sat_offset : int64;
+  inscription_id : text;
+  collection_symbol : opt text;
+  utxo_confirmations : int64;
+  omb_color : opt text;
+  omb_floor_price : opt int64
 };
 type AddressInscriptions = record {
-    data : vec AddressInscription;
-    last_updated : LastUpdated;
-    next_cursor : opt text
+  data : vec AddressInscription;
+  last_updated : LastUpdated;
+  next_cursor : opt text
 };
 type LastUpdated = record { block_hash : text; block_height : int64 };
 type Result = variant { Ok : AddressInscriptions; Err : text };
 type Result_1 = variant { Ok : UtxoInscriptions; Err : text };
 type Result_2 = variant { Ok; Err : text };
 type UtxoInscription = record {
-    inscription_id : text;
-    collection_symbol : opt text;
-    omb_color : opt text;
-    omb_floor_price : opt int64
+  inscription_id : text;
+  collection_symbol : opt text;
+  omb_color : opt text;
+  omb_floor_price : opt int64
 };
 type UtxoInscriptions = record {
-    data : vec UtxoInscription;
-    last_updated : LastUpdated;
-    next_cursor : opt text
+  data : vec UtxoInscription;
+  last_updated : LastUpdated;
+  next_cursor : opt text
 };
 service : {
-    get_address_inscriptions : (text, text) -> (Result);
-    get_api_key : () -> (text) query;
-    get_utxo_inscriptions : (text, text) -> (Result_1);
-    set_api_key : (text) -> (Result_2)
+  get_address_inscriptions : (text, text) -> (Result);
+  get_api_key : () -> (text) query;
+  get_utxo_inscriptions : (text, text) -> (Result_1);
+  set_api_key : (text) -> (Result_2)
 }
