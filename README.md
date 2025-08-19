@@ -2,6 +2,11 @@
 
 [ICP canister](https://internetcomputer.org/docs/building-apps/essentials/canisters) for Bitcoin metaprotocols. Born out of a collaboration between Maestro and Liquidium.
 
+## Current deployments
+
+-   DEV: https://dashboard.internetcomputer.org/canister/gdne4-jqaaa-aaaap-qp3ya-cai
+-   PROD: https://dashboard.internetcomputer.org/canister/iayqr-yaaaa-aaaar-qbopq-cai
+
 ## Prerequisites
 
 To get started, ensure you have the following installed:
@@ -15,6 +20,8 @@ rustup target add wasm32-unknown-unknown
 ```
 
 ## Running Locally
+
+### Setup local admin wallet
 
 ### Start Local Subnet
 
@@ -31,6 +38,8 @@ dfx generate
 ```
 
 ### Canister Management
+
+NOTE: If the `--network` argument is not provided, it defaults to the public [playground](https://internetcomputer.org/docs/building-apps/developing-canisters/custom-networks). For local deployments use `--network=local`.
 
 #### Create Canister
 
@@ -83,7 +92,7 @@ dfx canister update-settings bitcoin-metaprotocols-canister-dev --set-controller
 Set the API key:
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev set_api_key '("maestro_api_key")'
+dfx canister call --update bitcoin-metaprotocols-canister-dev set_api_key '("<maestro_api_key>")'
 ```
 
 ### Testing
@@ -100,6 +109,7 @@ dfx canister call --update bitcoin-metaprotocols-canister-dev get_address_inscri
 dfx canister call --update bitcoin-metaprotocols-canister-dev get_utxo_inscriptions '("604abd1c0ff2ce5a89b004a0601a75280ed3b76384af37b0a46a23471e9288e7", "1")'
 ```
 
-## TODOs
+## Other resources
 
--   [ ] Inscriptions by address with floor price
+-   [Cycleops](https://cycleops.dev/) for monitoring and topping up canisters.
+-   [Bitcoin subnet](https://dashboard.internetcomputer.org/network/subnets/pzp6e-ekpqk-3c5x7-2h6so-njoeq-mt45d-h3h6c-q3mxf-vpeq5-fk5o7-yae)
