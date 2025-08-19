@@ -94,13 +94,19 @@ dfx canister call --network=local --update bitcoin-metaprotocols-canister-dev se
 #### Test Address Inscriptions
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev get_address_inscriptions '("bc1pa2lw8d6u3kkexzqn9hqgzultkzjjc9rxtveldes68ryfdq8tmslqwfuccl", "10")'
+dfx canister call --network=local --update bitcoin-metaprotocols-canister-dev get_address_inscriptions '("bc1pa2lw8d6u3kkexzqn9hqgzultkzjjc9rxtveldes68ryfdq8tmslqwfuccl", "10")'
 ```
 
 #### Test UTXO Inscriptions
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev get_utxo_inscriptions '("604abd1c0ff2ce5a89b004a0601a75280ed3b76384af37b0a46a23471e9288e7", "1")'
+dfx canister call --network=local --update bitcoin-metaprotocols-canister-dev get_utxo_inscriptions '("604abd1c0ff2ce5a89b004a0601a75280ed3b76384af37b0a46a23471e9288e7", "1")'
+```
+
+#### Monitor canister logs
+
+```bash
+dfx canister logs --network=local bitcoin-metaprotocols-canister-dev
 ```
 
 ## Other resources
