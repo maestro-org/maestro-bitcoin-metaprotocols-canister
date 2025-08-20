@@ -18,7 +18,7 @@ Maestro Official Deployed Canister: [iayqr-yaaaa-aaaar-qbopq-cai](https://dashbo
 Before deploying and using the canister, ensure you have:
 
 1. **Rust** - [Install Rust](https://www.rust-lang.org/tools/install)
-2. **DFX** - [Install DFX](https://internetcomputer.org/docs/building-apps/developer-tools/dfx/)
+2. **DFX** - [Install DFX](https://internetcomputer.org/docs/building-apps/getting-started/install#installing-dfx-via-dfxvm)
 3. **WebAssembly target** for Rust:
     ```bash
     rustup target add wasm32-unknown-unknown
