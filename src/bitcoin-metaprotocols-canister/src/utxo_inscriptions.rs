@@ -7,7 +7,8 @@ use ic_cdk_macros::*;
 use serde::{Deserialize, Serialize};
 
 use crate::common::{
-    check_authorization, BASE_URL, LastUpdated, MaestroInscriptionInfoResponse, MaestroOmbColorGroup,
+    check_authorization, LastUpdated, MaestroInscriptionInfoResponse, MaestroOmbColorGroup,
+    BASE_URL,
 };
 
 // UTXO-specific types
@@ -63,7 +64,7 @@ pub async fn get_utxo_inscriptions(
 ) -> Result<UtxoInscriptions, String> {
     check_authorization()?;
 
-    let api_key = crate::get_api_key();
+    let api_key = crate::get_api_key()?;
 
     let utxo_inscriptions_maestro_url = format!(
         "{}/transactions/{}/outputs/{}",

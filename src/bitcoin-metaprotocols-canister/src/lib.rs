@@ -1,4 +1,4 @@
-use candid::{candid_method, CandidType};
+use candid::{candid_method, CandidType, Principal};
 use ic_cdk::api::msg_caller;
 use ic_cdk::management_canister::{HttpRequestResult, TransformArgs};
 use ic_cdk_macros::*;
@@ -6,6 +6,7 @@ use ic_stable_structures::{DefaultMemoryImpl, StableCell, Storable};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cell::RefCell;
+use std::collections::BTreeSet;
 
 mod address_inscriptions;
 mod common;
@@ -34,7 +35,7 @@ impl Storable for ApiKey {
         ic_stable_structures::storable::Bound::Unbounded;
 }
 
-// Thread-local storage for the API key
+// Thread-local storage for the API key and request state
 thread_local! {
     static API_KEY_STORAGE: RefCell<StableCell<ApiKey, DefaultMemoryImpl>> = RefCell::new(
         StableCell::init(
@@ -42,31 +43,82 @@ thread_local! {
             ApiKey { key: String::new() }
         ).unwrap()
     );
+
+    // Track pending requests to prevent reentrancy
+    static PENDING_REQUESTS: RefCell<BTreeSet<Principal>> = RefCell::new(BTreeSet::new());
 }
 
-#[query]
-#[candid_method(query)]
-fn get_api_key() -> String {
+// Guard for requests that modify state
+pub struct CallerGuard {
+    principal: Principal,
+}
+
+impl CallerGuard {
+    pub fn new(principal: Principal) -> Result<Self, String> {
+        PENDING_REQUESTS.with(|requests| {
+            let mut pending = requests.borrow_mut();
+            if pending.contains(&principal) {
+                return Err(format!(
+                    "Already processing a request for principal {:?}",
+                    &principal
+                ));
+            }
+            pending.insert(principal);
+            Ok(Self { principal })
+        })
+    }
+}
+
+impl Drop for CallerGuard {
+    fn drop(&mut self) {
+        PENDING_REQUESTS.with(|requests| {
+            requests.borrow_mut().remove(&self.principal);
+        });
+    }
+}
+
+// Guard function for authorization
+fn authorized_guard() -> Result<(), String> {
     let caller = msg_caller();
     let caller_str = caller.to_text();
 
     if !AUTHORIZED_CALLERS.iter().any(|&auth| auth == caller_str) {
-        panic!("Unauthorized");
+        return Err("Unauthorized: Caller not in authorized list".to_string());
     }
+    Ok(())
+}
 
-    API_KEY_STORAGE.with(|storage| storage.borrow().get().key.clone())
+#[query(guard = "authorized_guard")]
+#[candid_method(query)]
+fn get_api_key() -> Result<String, String> {
+    // Authorization is handled by guard function
+    API_KEY_STORAGE.with(|storage| {
+        let key = storage.borrow().get().key.clone();
+        if key.is_empty() {
+            Err("API key not set".to_string())
+        } else {
+            Ok(key)
+        }
+    })
 }
 
 // Update the set_api_key function to use the global constant
-#[update]
+#[update(guard = "authorized_guard")]
 #[candid_method(update)]
 async fn set_api_key(new_key: String) -> Result<(), String> {
-    let caller = ic_cdk::api::msg_caller();
-    let caller_str = caller.to_text();
+    let caller = msg_caller();
 
-    if !AUTHORIZED_CALLERS.iter().any(|&auth| auth == caller_str) {
-        return Err("Unauthorized".into());
+    // Input validation
+    if new_key.is_empty() {
+        return Err("API key cannot be empty".to_string());
     }
+
+    if new_key.len() > 1000 {
+        return Err("API key too long (max 1000 characters)".to_string());
+    }
+
+    // Prevent reentrancy by the same caller
+    let _guard = CallerGuard::new(caller).map_err(|e| format!("Reentrancy protection: {}", e))?;
 
     API_KEY_STORAGE.with(|storage| {
         storage

@@ -60,7 +60,7 @@ pub async fn get_address_inscriptions(
 ) -> Result<AddressInscriptions, String> {
     check_authorization()?;
 
-    let api_key = crate::get_api_key();
+    let api_key = crate::get_api_key()?;
 
     let address_inscriptions_maestro_url = format!(
         "{}/addresses/{}/inscriptions?count={}",
