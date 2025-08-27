@@ -28,93 +28,154 @@ Before deploying and using the canister, ensure you have:
     - `ic-wasm`: `cargo install ic-wasm`
     - `candid-extractor`: `cargo install candid-extractor`
 
+### Authorization
+
+The canister implements access control through a hardcoded list of authorized principals. As it currently exists, only the following principals can call the canister methods:
+
+-   Maestro principals
+-   Liquidium principals
+-   Other authorized entities
+
+**Current authorized callers**:
+
+_These should be replaced with your own list of authorized callers before deployment and canister interaction._
+
+```rust
+// Constants
+pub const AUTHORIZED_CALLERS: [&str; 7] = [
+    "62ick-jmsqq-h6wq5-emdfw-qblno-qphae-hs7y3-dxoyp-xiccq-bw4q3-aae", // maestro
+    "xktoe-jjqeb-tzsr3-hxjir-en65h-6agv7-bbq2g-dyoch-276wj-waea7-rqe",
+    "roqha-4aaaa-aaaap-qplnq-cai", // liquidium
+    "e453p-eqaaa-aaaar-qanya-cai",
+    "vr4ua-siaaa-aaaar-qaosq-cai",
+    "pimqm-2dtug-w3ejt-krqai-jlp3u-uux2y-erjcw-wbvhu-pmvhu-hunju-wqe",
+    "daoh3-exchb-6dvbd-fyxld-7kxjo-fdddf-4vhqp-mcoo2-s7gqh-qwpfd-pae",
+];
+```
+
+[Source](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/blob/main/src/bitcoin-metaprotocols-canister/src/common.rs#L5-L14)
+
 ## Deployment Guide
 
 ### Local Development Deployment
 
-#### 1. Start Local ICP Subnet
+**NOTE**: If the `--network` argument is not provided, it defaults to the public playground. For local deployments use `--network=local`. For mainnet use `--network=ic`.
 
-Start the local Internet Computer subnet in a dedicated terminal:
+#### 1. Setup identity (Optional)
+
+Create new dedicated identity, or:
+
+Use the default one for local development:
+
+```bash
+dfx identity use default
+```
+
+#### 2. Start Local ICP Subnet
+
+In a _separate_ terminal window, start the local Internet Computer subnet.
+
+This will create a local canister execution environment and web server processes. This enables you to test your dapps during development.
 
 ```bash
 dfx start --clean
 ```
 
-#### 2. Generate Candid Interface (Optional)
+Output:
 
 ```bash
-dfx generate
+Running dfx start for version 0.26.1
+Using the default configuration for the local shared network.
+Replica API running on 127.0.0.1:4943. You must open a new terminal to continue developing. If you'd prefer to stop, quit with 'Ctrl-C'.
 ```
 
 #### 3. Create and Deploy Canister
 
 Create the development canister:
 
+_Creates an empty canister and associates the assigned Canister ID to the canister name._
+
 ```bash
 dfx canister create bitcoin-metaprotocols-canister-dev
 ```
 
-Generate the Candid interface and build:
+Output:
 
 ```bash
-make generate_did
+Created a wallet canister on the "local" network for user "default" with ID "uqqxf-5h777-77774-qaaaa-cai"
+bitcoin-metaprotocols-canister-dev canister created with canister id: uxrrr-q7777-77774-qaaaq-cai
 ```
 
-Deploy the canister:
+Generate DID:
+
+-   A `.did` file is a text file that contains a [Candid](https://internetcomputer.org/docs/building-apps/interact-with-canisters/candid) service description, written either manually or generated from a canister's code.
+-   It describes the public methods, arguments, and return types of a canister.
 
 ```bash
-dfx deploy
+dfx generate --network=local bitcoin-metaprotocols-canister-dev
 ```
 
-#### 4. Set API Key
-
-The canister requires a Maestro API key to function. Set it using:
+Output:
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev set_api_key '("your_maestro_api_key_here")'
+Generated type declarations for canister 'bitcoin-metaprotocols-canister-dev' to 'maestro-bitcoin-metaprotocols-canister/src/declarations/bitcoin-metaprotocols-canister-dev'
 ```
 
-### Production Deployment to ICP Mainnet
+Build the canister:
 
-#### 1. Configure Network
-
-Ensure your `dfx.json` is configured for mainnet deployment. The canister supports both development and production configurations:
-
--   `bitcoin-metaprotocols-canister-dev` - Development canister
--   `bitcoin-metaprotocols-canister-prod` - Production canister
-
-#### 2. Deploy to Mainnet
+_Compiles the program code into a WebAssembly module that can be deployed on ICP._
 
 ```bash
-# Build and generate Candid
-make generate_did
-
-# Deploy to mainnet
-dfx deploy --network ic bitcoin-metaprotocols-canister-prod
-
-# Set the API key for production
-dfx canister call --network ic --update bitcoin-metaprotocols-canister-prod set_api_key '("your_maestro_api_key_here")'
+dfx build --network=local bitcoin-metaprotocols-canister-dev
 ```
 
-#### 3. Manage Canister Settings
-
-Update canister controllers if needed:
+Output:
 
 ```bash
-dfx canister update-settings bitcoin-metaprotocols-canister-prod --network ic --set-controller <controller_principal_id>
+Building canister 'bitcoin-metaprotocols-canister-dev'.
+Executing: cargo build --target wasm32-unknown-unknown --release -p bitcoin-metaprotocols-canister --locked
+Finished building canisters.
 ```
 
-### Bitcoin Regtest Setup
+Install the canister:
 
-The canister is designed to work with Bitcoin mainnet data through the Maestro API. For regtest environments:
+_Installs compiled code in a canister._
 
-1. **API Configuration**: The canister uses `https://xbt-mainnet.gomaestro-api.org/v0` as the base URL
-2. **Testing**: For regtest testing, you would need:
-    - A local Bitcoin regtest network
-    - Modified API endpoints (if available for regtest)
-    - Or mock data for testing purposes
+```bash
+dfx canister install --network=local bitcoin-metaprotocols-canister-dev
+```
 
-**Note**: The current implementation is configured for mainnet Bitcoin data. Regtest support would require modifications to the API endpoints or the use of a regtest-compatible indexing service.
+Output:
+
+```bash
+Installed code for canister bitcoin-metaprotocols-canister-dev, with canister ID uxrrr-q7777-77774-qaaaq-cai
+```
+
+**Note:** You can also run `dfx canister deploy` to combine the following steps in the future:
+
+-   `dfx canister create <canister_name>`
+-   `dfx build`
+-   `dfx canister install <canister_name>`
+
+#### 4. Render the Canister
+
+After [starting the local ICP subnet](#2-start-local-icp-subnet), we can leverage [Candid UI](https://internetcomputer.org/docs/building-apps/interact-with-canisters/candid/using-candid) to interact with our canister directly within the browser.
+
+```bash
+http://127.0.0.1:4943/?canisterId=u6s2n-gx777-77774-qaaba-cai&id=uxrrr-q7777-77774-qaaaq-cai
+```
+
+You may notice the `canisterId` query paramter with value: `u6s2n-gx777-77774-qaaba-cai`; this is Candid's canister that is necessary in order to render our canister's functionality.
+
+**Note:** ICP's canister IDs are _non-deterministic_, so you may need to replace the above `uxrrr-q7777-77774-qaaaq-cai` canister ID with the ID that is generated from the [Create and Deploy canister](#3-create-and-deploy-canister) step if you are not wiping the subnet state for consecutive deployments.
+
+![](https://github.com/user-attachments/assets/9fb4ad71-6c49-400c-b366-8608241b5fa2)
+
+### Canister Interaction
+
+The canister is designed to work with Bitcoin mainnet data through the Maestro API.
+
+**Note**: Regtest support would require modifications to the API endpoints or the use of a regtest-compatible indexing service.
 
 ## Available Methods
 
@@ -136,6 +197,8 @@ Retrieves all inscriptions associated with a Bitcoin address.
 -   `data`: Array of inscription details
 -   `last_updated`: Block information when data was last updated
 -   `next_cursor`: Pagination cursor for additional results
+
+**Authorization**: Only authorized principals can call this method.
 
 **Example Usage**:
 
@@ -161,6 +224,8 @@ Retrieves inscriptions for a specific UTXO (transaction output).
 -   `data`: Array of inscription details for the UTXO
 -   `last_updated`: Block information
 -   `next_cursor`: Pagination cursor
+
+**Authorization**: Only authorized principals can call this method.
 
 **Example Usage**:
 
@@ -244,24 +309,6 @@ type LastUpdated = record {
 };
 ```
 
-## Authorization
-
-The canister implements access control through a hardcoded list of authorized principals. Only the following principals can call the canister methods:
-
--   Maestro principals
--   Liquidium principals
--   Other authorized entities
-
-**Current authorized callers**:
-
--   `62ick-jmsqq-h6wq5-emdfw-qblno-qphae-hs7y3-dxoyp-xiccq-bw4q3-aae`
--   `xktoe-jjqeb-tzsr3-hxjir-en65h-6agv7-bbq2g-dyoch-276wj-waea7-rqe`
--   `roqha-4aaaa-aaaap-qplnq-cai`
--   `e453p-eqaaa-aaaar-qanya-cai`
--   `vr4ua-siaaa-aaaar-qaosq-cai`
--   `pimqm-2dtug-w3ejt-krqai-jlp3u-uux2y-erjcw-wbvhu-pmvhu-hunju-wqe`
--   `daoh3-exchb-6dvbd-fyxld-7kxjo-fdddf-4vhqp-mcoo2-s7gqh-qwpfd-pae`
-
 ## Troubleshooting
 
 ### Common Issues
@@ -277,13 +324,7 @@ The canister implements access control through a hardcoded list of authorized pr
     - Ensure you have a valid Maestro API key
     - Check that the API key has sufficient permissions
 
-3. **HTTP Request Failures**
-
-    - Check internet connectivity
-    - Verify Maestro API service status
-    - Ensure sufficient cycles are available for HTTP outcalls
-
-4. **Deployment Issues**
+3. **Deployment Issues**
     - Ensure all prerequisites are installed
     - Run `make generate_did` before deployment
     - Check that the WebAssembly target is installed
@@ -323,32 +364,20 @@ dfx canister deposit-cycles 1000000000000 bitcoin-metaprotocols-canister-dev
     -   OMB color group API call (per inscription)
 -   Plan cycle usage accordingly based on expected query volume
 
-## Development
-
-### Building Locally
-
-```bash
-# Build the canister
-cargo build --target wasm32-unknown-unknown --release
-
-# Generate Candid interface
-make generate_did
-```
-
 ### Debugging
 
 Enable debug logging in the canister by checking the `ic_cdk::println!` statements in the source code. These will output to the replica logs during development.
 
 -   [Cycleops](https://cycleops.dev/) for monitoring and topping up canisters.
 
-## Support and Contributing
+## 🎉 You’re Done!
 
-For issues, feature requests, or contributions:
+You have now walked through a guide on how to deploy and interact with the Maestro Bitcoin Metaprotocols Canister.
 
--   [Submit an issue](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/issues/new)
--   Ensure you follow the existing code style and patterns
--   Test thoroughly before submitting changes
+Be sure to check out [Maestro's additional services](https://www.gomaestro.org/chains/bitcoin) for further assisting your development of building on Bitcoin.
 
-## License
+---
 
-This project is licensed under the [Apache 2.0 License](../LICENSE).
+### Support
+
+If you are experiencing any trouble with the above, [submit an issue](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/issues/new) or reach out on <a href="https://discord.gg/ES2rDhBJt3" target="_blank">Discord</a>.
