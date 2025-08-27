@@ -2,6 +2,11 @@
 
 [ICP canister](https://internetcomputer.org/docs/building-apps/essentials/canisters) for Bitcoin metaprotocols. Born out of a collaboration between Maestro and Liquidium.
 
+## Current deployments
+
+-   DEV: https://dashboard.internetcomputer.org/canister/gdne4-jqaaa-aaaap-qp3ya-cai
+-   PROD: https://dashboard.internetcomputer.org/canister/iayqr-yaaaa-aaaar-qbopq-cai
+
 ## Prerequisites
 
 To get started, ensure you have the following installed:
@@ -16,6 +21,18 @@ rustup target add wasm32-unknown-unknown
 
 ## Running Locally
 
+### Setup identity (Optional)
+
+Create new dedicated [identity](https://internetcomputer.org/docs/building-apps/developer-tools/dfx/dfx-identity), or:
+
+Use the default one for local development:
+
+```bash
+dfx identity use default
+```
+
+If the `--network` argument is not provided, it defaults to the public [playground](https://internetcomputer.org/docs/building-apps/developing-canisters/custom-networks). For local deployments use `--network=local`. For mainnet use `--network=ic`.
+
 ### Start Local Subnet
 
 Start the local subnet in a dedicated terminal:
@@ -24,58 +41,44 @@ Start the local subnet in a dedicated terminal:
 dfx start --clean
 ```
 
-### Generate DID (Optional)
-
-```bash
-dfx generate
-```
-
 ### Canister Management
 
-#### Create Canister
+#### Create Canisters
 
 ```bash
-dfx canister create bitcoin-metaprotocols-canister-dev
+dfx canister create --network=local bitcoin-metaprotocols-canister-dev
 ```
 
-#### Build Canister (Optional)
+### Generate DID
 
 ```bash
-dfx build
+dfx generate --network=local bitcoin-metaprotocols-canister-dev
 ```
 
-### Generate Candid (Optional)
+#### Build Canister
 
-Prerequisite:
-
--   Get the `didc` binary from https://github.com/dfinity/candid/releases.
--   Install ic-wasm: `cargo install ic-wasm`
-
-Generate candid:
-
-```
-make generate_did
+```bash
+dfx build --network=local bitcoin-metaprotocols-canister-dev
 ```
 
 #### Deploy Canister
 
 ```bash
-make generate_did
-dfx deploy
+dfx deploy --network=local bitcoin-metaprotocols-canister-dev
 ```
 
 #### Get Canister Info
 
 ```bash
-dfx canister info bitcoin-metaprotocols-canister-dev
+dfx canister info --network=local bitcoin-metaprotocols-canister-dev
 ```
 
-#### Update Canister Settings
+#### Update Canister Settings (Optional)
 
 Set the canister principal:
 
 ```bash
-dfx canister update-settings bitcoin-metaprotocols-canister-dev --set-controller <id>
+dfx canister update-settings --network=local bitcoin-metaprotocols-canister-dev --set-controller <id>
 ```
 
 ### API Key Management
@@ -83,7 +86,7 @@ dfx canister update-settings bitcoin-metaprotocols-canister-dev --set-controller
 Set the API key:
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev set_api_key '("maestro_api_key")'
+dfx canister call --network=local --update bitcoin-metaprotocols-canister-dev set_api_key '("<maestro_api_key>")'
 ```
 
 ### Testing
@@ -91,15 +94,23 @@ dfx canister call --update bitcoin-metaprotocols-canister-dev set_api_key '("mae
 #### Test Address Inscriptions
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev get_address_inscriptions '("bc1pa2lw8d6u3kkexzqn9hqgzultkzjjc9rxtveldes68ryfdq8tmslqwfuccl", "10")'
+dfx canister call --network=local --update bitcoin-metaprotocols-canister-dev get_address_inscriptions '("bc1pa2lw8d6u3kkexzqn9hqgzultkzjjc9rxtveldes68ryfdq8tmslqwfuccl", "10")'
 ```
 
 #### Test UTXO Inscriptions
 
 ```bash
-dfx canister call --update bitcoin-metaprotocols-canister-dev get_utxo_inscriptions '("604abd1c0ff2ce5a89b004a0601a75280ed3b76384af37b0a46a23471e9288e7", "1")'
+dfx canister call --network=local --update bitcoin-metaprotocols-canister-dev get_utxo_inscriptions '("604abd1c0ff2ce5a89b004a0601a75280ed3b76384af37b0a46a23471e9288e7", "1")'
 ```
 
-## TODOs
+#### Monitor canister logs
 
--   [ ] Inscriptions by address with floor price
+```bash
+dfx canister logs --network=local bitcoin-metaprotocols-canister-dev
+```
+
+## Other resources
+
+-   [Cycleops](https://cycleops.dev/) for monitoring and topping up canisters.
+-   [Bitcoin subnet](https://dashboard.internetcomputer.org/network/subnets/pzp6e-ekpqk-3c5x7-2h6so-njoeq-mt45d-h3h6c-q3mxf-vpeq5-fk5o7-yae)
+-   [Networks](https://internetcomputer.org/docs/building-apps/developing-canisters/custom-networks#custom-dfx-networks)
