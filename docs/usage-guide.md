@@ -169,7 +169,7 @@ You may notice the `canisterId` query paramter with value: `u6s2n-gx777-77774-qa
 
 **Note:** ICP's canister IDs are _non-deterministic_, so you may need to replace the above `uxrrr-q7777-77774-qaaaq-cai` canister ID with the ID that is generated from the [Create and Deploy canister](#3-create-and-deploy-canister) step if you are not wiping the subnet state for consecutive deployments.
 
-![](https://github.com/user-attachments/assets/9fb4ad71-6c49-400c-b366-8608241b5fa2)
+![](https://github.com/user-attachments/assets/34499959-d703-4f54-85f6-f3523e492ae4)
 
 ### Canister Interaction
 
@@ -206,7 +206,7 @@ Retrieves all inscriptions associated with a Bitcoin address.
 dfx canister call --update bitcoin-metaprotocols-canister-dev get_address_inscriptions '("bc1pa2lw8d6u3kkexzqn9hqgzultkzjjc9rxtveldes68ryfdq8tmslqwfuccl", "10")'
 ```
 
-[Inscription Info API Reference](https://docs.gomaestro.org/bitcoin/blockchain-indexer-api/inscriptions/inscription-info)
+[API Docs: Inscription Info](https://docs.gomaestro.org/bitcoin/blockchain-indexer-api/inscriptions/inscription-info)
 
 ### 2. get_utxo_inscriptions
 
@@ -233,7 +233,7 @@ Retrieves inscriptions for a specific UTXO (transaction output).
 dfx canister call --update bitcoin-metaprotocols-canister-dev get_utxo_inscriptions '("604abd1c0ff2ce5a89b004a0601a75280ed3b76384af37b0a46a23471e9288e7", "1")'
 ```
 
-[Transaction Output Info API Reference](https://docs.gomaestro.org/bitcoin/blockchain-indexer-api/transactions/transaction-output-info)
+[API Docs: Transaction Output Info](https://docs.gomaestro.org/bitcoin/blockchain-indexer-api/transactions/transaction-output-info)
 
 ### 3. set_api_key
 
