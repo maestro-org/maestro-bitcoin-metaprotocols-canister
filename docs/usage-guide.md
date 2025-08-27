@@ -53,7 +53,7 @@ pub const AUTHORIZED_CALLERS: [&str; 7] = [
 ];
 ```
 
-[Source](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/blob/main/src/bitcoin-metaprotocols-canister/src/common.rs#L5-L14)
+[Source](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/blob/main/src/bitcoin-metaprotocols-canister/src/common.rs)
 
 ## Deployment Guide
 
