@@ -61,7 +61,7 @@ pub const AUTHORIZED_CALLERS: [&str; 7] = [
 
 ### Local Development Deployment
 
-**Note**: If the `--network` argument is not provided, it defaults to the public playground. For local deployments use `--network=local`. For mainnet use `--network=ic`.
+**Note:** If the `--network` argument is not provided, it defaults to the public playground. For local deployments use `--network=local`. For mainnet use `--network=ic`.
 
 #### 1. Setup identity (Optional)
 
