@@ -55,7 +55,7 @@ pub const AUTHORIZED_CALLERS: [&str; 7] = [
 ];
 ```
 
-[Source](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/blob/main/src/bitcoin-metaprotocols-canister/src/common.rs#L5-L14)
+[Source](https://github.com/maestro-org/maestro-bitcoin-metaprotocols-canister/blob/main/src/bitcoin-metaprotocols-canister/src/common.rs)
 
 ## Deployment Guide
 
@@ -167,7 +167,7 @@ After [starting the local ICP subnet](#2-start-local-icp-subnet), we can leverag
 http://127.0.0.1:4943/?canisterId=u6s2n-gx777-77774-qaaba-cai&id=uxrrr-q7777-77774-qaaaq-cai
 ```
 
-You may notice the `canisterId` query paramter with value: `u6s2n-gx777-77774-qaaba-cai`; this is Candid's canister that is necessary in order to render our canister's functionality.
+You may notice the `canisterId` query parameter with value: `u6s2n-gx777-77774-qaaba-cai`; this is Candid's canister that is necessary in order to render our canister's functionality.
 
 **Note:** ICP's canister IDs are _non-deterministic_, so you may need to replace the above `uxrrr-q7777-77774-qaaaq-cai` canister ID with the ID that is generated from the [Create and Deploy canister](#3-create-and-deploy-canister) step if you are not wiping the subnet state for consecutive deployments.
 
