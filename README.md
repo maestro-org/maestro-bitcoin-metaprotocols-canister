@@ -21,6 +21,8 @@ rustup target add wasm32-unknown-unknown
 
 ## Running Locally
 
+Follow the below steps or follow our [usage guide](./docs/usage-guide.md) for a more guided walkthrough of deploying and interacting with the canister.
+
 ### Setup identity (Optional)
 
 Create new dedicated [identity](https://internetcomputer.org/docs/building-apps/developer-tools/dfx/dfx-identity), or:
