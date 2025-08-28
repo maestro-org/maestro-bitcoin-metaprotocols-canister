@@ -15,6 +15,8 @@ Maestro Official Deployed Canister: [iayqr-yaaaa-aaaar-qbopq-cai](https://dashbo
 
 ## Prerequisites
 
+-   A Maestro [API key](https://dashboard.gomaestro.org/login)
+
 Before deploying and using the canister, ensure you have:
 
 1. **Rust** - [Install Rust](https://www.rust-lang.org/tools/install)
@@ -59,7 +61,7 @@ pub const AUTHORIZED_CALLERS: [&str; 7] = [
 
 ### Local Development Deployment
 
-**NOTE**: If the `--network` argument is not provided, it defaults to the public playground. For local deployments use `--network=local`. For mainnet use `--network=ic`.
+**Note**: If the `--network` argument is not provided, it defaults to the public playground. For local deployments use `--network=local`. For mainnet use `--network=ic`.
 
 #### 1. Setup identity (Optional)
 
@@ -175,7 +177,7 @@ You may notice the `canisterId` query paramter with value: `u6s2n-gx777-77774-qa
 
 The canister is designed to work with Bitcoin mainnet data through the Maestro API.
 
-**Note**: Regtest support would require modifications to the API endpoints or the use of a regtest-compatible indexing service.
+**Note:** Regtest support would require modifications to the API endpoints or the use of a regtest-compatible indexing service.
 
 ## Available Methods
 
