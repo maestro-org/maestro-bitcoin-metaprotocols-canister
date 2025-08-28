@@ -171,7 +171,7 @@ You may notice the `canisterId` query parameter with value: `u6s2n-gx777-77774-q
 
 **Note:** ICP's canister IDs are _non-deterministic_, so you may need to replace the above `uxrrr-q7777-77774-qaaaq-cai` canister ID with the ID that is generated from the [Create and Deploy canister](#3-create-and-deploy-canister) step if you are not wiping the subnet state for consecutive deployments.
 
-![](https://github.com/user-attachments/assets/34499959-d703-4f54-85f6-f3523e492ae4)
+![Candid UI interface showing canister methods](https://github.com/user-attachments/assets/34499959-d703-4f54-85f6-f3523e492ae4)
 
 ### Canister Interaction
 
