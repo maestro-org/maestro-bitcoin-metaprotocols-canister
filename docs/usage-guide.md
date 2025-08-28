@@ -65,7 +65,7 @@ pub const AUTHORIZED_CALLERS: [&str; 7] = [
 
 #### 1. Setup identity (Optional)
 
-Create new dedicated identity, or:
+Create a new dedicated identity, or:
 
 Use the default one for local development:
 
